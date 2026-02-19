@@ -1,0 +1,246 @@
+namespace ConsoleApp23
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            //Количество интервалов времени
+            int n;
+
+            //Максимальное время в интервале
+            int maxTime = 7;
+            Console.WriteLine("Программа для работы с моделями: Нельсона и Джелинского-Моранды. Для выявления надёжности ПО");
+            Console.Write("Введите количество интервалов времени: ");
+            
+            //Ввод количества интервалов времени
+            string input = Console.ReadLine();
+
+            //Истинно до тех пор, пока не будет указан верный формат числа
+            while (!int.TryParse(input, out n) || n <= 0)
+            {
+                //Проверка на то, что формат неверный
+                if (!int.TryParse(input, out _))
+                {
+                    Console.Write("Ошибка! Указан неверный формат. Введите число: ");
+                }
+
+                //В ином случае, проверка на выход из диапозона
+                else
+                {
+                    Console.Write("Ошибка! Введите корректное положительное число: ");
+                }
+
+                input = Console.ReadLine();
+            }
+
+            //Выбор способа заполнения интервалов времени
+            Console.WriteLine("Заполнить интервалы времени вручную или заполнить случайными значениями?");
+
+            //Истино до тех пор, пока не выйдем из цикла
+            while (true)
+            {
+               Console.Write("Ваш вариант: ");
+            
+                //Вариант заполнения интервалов времени
+                string str = Console.ReadLine().ToLower().Trim(); ;
+
+                //deltaT-интервалы времени
+                double[] deltaT = new double[n];
+
+                //Варианты заполнения интервалов времени
+                switch (str.ToLower())
+                {
+                    case "вручную":
+                        //Ввод интервалов времени вручную с проверкой корректности
+                        for (int i = 0; i < n; i++)
+                        {
+                            bool isValid = false;
+                            while (!isValid)
+                            {
+                                Console.Write($"Введите {i + 1} интервал времени: ");
+                                string input3 = Console.ReadLine();
+
+                                if (!double.TryParse(input3, out deltaT[i]))
+                                {
+                                    Console.WriteLine($"Ошибка! Введите число для элемента интервала {i + 1}.");
+                                    continue; // повторяем ввод
+                                }
+
+                                if (deltaT[i] > maxTime)
+                                {
+                                    Console.WriteLine($"Ошибка! Введите значение меньше, чем максимальное {maxTime} для элемента интервала {i + 1}.");
+                                    continue; // повторяем ввод
+                                }
+
+                                if(deltaT[i] <= 0)
+                                {
+                                    Console.WriteLine($"Ошибка! Введите положительное значение для элемента интервала {i + 1}.");
+                                    continue;
+                                }
+
+                                isValid = true;
+                            }
+                        }
+                        break;
+
+                    case "случайно":
+                        //Заполнение интервалов времени случайными числами
+                        Random rnd = new Random();
+                        for (int i = 0; i < n; i++)
+                        {
+                            deltaT[i] = rnd.Next(1, maxTime); //случайные числа от 1 до maxTime-1
+                        }
+                        break;
+
+                    default:
+                        Console.WriteLine("Такого варианта не существует");
+                        continue;
+                }
+
+
+                Console.Write("По какому количеству ошибок будет рассчитываться: коэффицент, интенсивность и интенсивность ошибок?\nИндексы и значения:\n1)50;\n2)160;\n3)110.\nПо индексу-");
+
+                //Выбор индекса количества ошибок
+                string inputnumber = Console.ReadLine();
+
+                //Индекс количества ошибок
+                int errorIndex;
+                while (!int.TryParse(inputnumber, out errorIndex) || errorIndex < 1 || errorIndex > 3)
+                {
+                    // Проверка на то, что формат неверный или выход за диапазон
+                    Console.Write("Ошибка! Введите индекс от 1 до 3: ");
+                    inputnumber = Console.ReadLine();
+                }
+                errorIndex--; // Преобразуем в индекс массива (с 0)
+
+                //N-Общее количество ошибок
+                int[] N = { 50, 160, 110 };
+
+                Console.WriteLine("Результат работы:\n" + new string('*', 20));
+                //N_i-Число запусков, n_i-Число отказов, P_i-Вероятность выбора
+                double[] N_i = { 90, 210, 180 }, n_i = { 6, 9, 5 }, P_i = { 0.5, 0.3, 0.2 };
+
+                //k-количество ошибок
+                int k = deltaT.Length;
+
+                //C-Параметр интенсивности, K-Коэффициент модели Джелинского-Моранды
+                double C, K;
+
+                //Рассчёт надёжности
+                double reliability = CalculationOfReability(N_i, n_i, P_i);
+                Console.WriteLine($"Надежность ПО: {reliability:F4}\n" + new string('-', 20));
+
+                //Рассчёт Коэффицента
+                K = CalculationOfK(deltaT, N[errorIndex]);
+                Console.WriteLine($"Рассчёт Коэффицента: {K:F4}\n" + new string('-', 20));
+
+                //Рассчёт интенсивности
+                C = CalculationOfC(deltaT, N[errorIndex]);
+                Console.WriteLine($"Рассчёт Интенсивности: {C:F4}\n" + new string('-', 20));
+
+                //lambdaList-Рассчёт интесивности отказов
+                double[] lambdaList = CalculationOfLambda(K, N[errorIndex], k);
+                Console.WriteLine($"Рассчёт Интенсивности Отказов:\n" + new string('-', 20));
+
+                //Перебираем весь список интенсивностей отказов
+                foreach (var lambda in lambdaList)
+                {
+                    //Выводим каждую интенсивность отказов
+                    Console.WriteLine(lambda);
+                }
+                break;
+            }
+            Console.WriteLine(new string('*', 20));
+            Console.Write("Нажмите Enter для выхода..");
+
+            Console.ReadLine();
+        }
+
+        /// <summary>
+        /// Метод для рассчёта надёжности-Моделью Нельсона
+        /// </summary>
+        /// <param name="N">Число запусков</param>
+        /// <param name="n">Число отказов</param>
+        /// <param name="P">Вероятность выбора</param>
+        /// <returns>Рассчитаная надёжность</returns>
+        static double CalculationOfReability(double[] N, double[] n, double[] P)
+        {
+            double sum = 0;
+
+            for(int i = 0; i<N.Length; i++)
+            {
+                sum += (n[i] / N[i]) * P[i];
+            }
+
+            return 1 - sum;
+        }
+
+        /// <summary>
+        /// Метод для рассчёта коэффицента-Моделью Джелинского-Моранды
+        /// </summary>
+        /// <param name="deltaT">Интесивность отказов</param>
+        /// <param name="N">Общее число ошибок</param>
+        /// <returns>Рассчитаный коэффицент</returns>
+        static double CalculationOfK(double[] deltaT, int N)
+        {
+            double sum1 = 0;       // сумма (N+1-i)*deltaT[i]
+            double sum2 = 0;       // сумма 1/(N+1-i)
+            double sumDeltaT = 0;  // сумма deltaT[i]
+            int k = deltaT.Length;
+
+            for (int i = 0; i < k; i++)
+            {
+                sum1 += (N + 1 - (i + 1)) * deltaT[i]; // i+1, чтобы совпадало с формулой от 1 до k
+                sum2 += 1.0 / (N + 1 - (i + 1));
+                sumDeltaT += deltaT[i];
+            }
+
+            double K = (sum1 * sum2) / sumDeltaT;
+            return K;
+        }
+
+        /// <summary>
+        /// Метод для рассчёта интенсивности-Моделью Джелинского-Моранды
+        /// </summary>
+        /// <param name="deltaT">Интесивность отказов</param>
+        /// <param name="N">Общее число ошибок</param>
+        /// <returns>Рассчитаная интенсивность</returns>
+        static double CalculationOfC(double[] deltaT, int N)
+        {
+            double sum2 = 0;       // сумма 1/(N+1-i)
+            double sumDeltaT = 0;  // сумма deltaT[i]
+            int k = deltaT.Length;
+
+            for (int i = 0; i < k; i++)
+            {
+                sum2 += 1.0 / (N + 1 - (i + 1));  // i+1, чтобы совпадало с формулой от 1 до k
+                sumDeltaT += deltaT[i];
+            }
+
+            double C = sumDeltaT / sum2;
+            return C;
+        }
+
+        /// <summary>
+        /// Метод для рассчёта интенсивности отказов-Моделью Джелинского-Моранды
+        /// </summary>
+        /// <param name="K">Коэффицент</param>
+        /// <param name="N">Общее число ошибок</param>
+        /// <param name="k">Количество ошибок</param>
+        /// <returns>Рассчитаная интесивность отказов</returns>
+        static double[] CalculationOfLambda(double K, int N, int k)
+        {
+            //Интесивности отказов
+            double[] lambda = new double[k];
+
+            //Проходимся про всем интенсивностям
+            for (int i = 0; i < k; i++)
+            {
+                int n_t = i;         // количество найденных ошибок до этой итерации
+                lambda[i] = K * (N - n_t);
+            }
+
+            return lambda;
+        }
+    }
+}
